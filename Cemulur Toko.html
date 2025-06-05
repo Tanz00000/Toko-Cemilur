@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toko Online Cemilur</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .product-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 50; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .payment-option {
+            transition: transform 0.2s ease;
+        }
+        .payment-option:hover {
+            transform: scale(1.05);
+        }
+        .payment-option.selected {
+            border-color: #2563eb; /* blue-600 */
+            box-shadow: 0 0 0 2px #2563eb;
+        }
+        .cart-items-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .cart-items-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .cart-items-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .cart-items-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #10B981; /* green-500 */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 100;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            visibility: hidden;
+        }
+        .notification.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+        .notification.hide {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+            visibility: hidden;
+        }
+        .size-option input[type="radio"] {
+            display: none;
+        }
+        .size-option label {
+            display: inline-block;
+            padding: 8px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+            margin-right: 8px;
+        }
+        .size-option input[type="radio"]:checked + label {
+            background-color: #fb923c;
+            border-color: #f97316;
+            color: white;
+            font-weight: 600;
+        }
+        .size-option label:hover {
+            border-color: #fDBA74;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-md sticky top-0 z-40">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-orange-500">Cemilur</h1>
+            <div class="relative">
+                <button id="cartButton" class="text-gray-700 hover:text-orange-500 relative">
+                    <i class="fas fa-shopping-cart text-2xl"></i>
+                    <span id="cartCount" class="absolute -top-2 -right-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Product Section -->
+        <section id="produk" class="mb-12">
+            <h2 class="text-2xl font-semibold mb-6 text-center text-gray-700">Produk Kami</h2>
+            <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- Product items will be injected here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- Shopping Cart Section (Modal) -->
+        <div id="cartModal" class="modal">
+            <div class="modal-content bg-white shadow-xl rounded-lg">
+                <div class="flex justify-between items-center pb-4 border-b">
+                    <h3 class="text-xl font-semibold text-gray-700">Keranjang Belanja Anda</h3>
+                    <span class="close-button" id="closeCartModal">&times;</span>
+                </div>
+                <div id="cartItemsContainer" class="cart-items-container my-4 max-h-96 overflow-y-auto">
+                    <!-- Cart items will be injected here -->
+                </div>
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="text-lg font-semibold text-gray-700">Total:</span>
+                        <span id="cartTotal" class="text-lg font-bold text-orange-500">Rp 0</span>
+                    </div>
+                    <button id="checkoutButton" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:opacity-50">
+                        Lanjut ke Pembayaran
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Modal -->
+        <div id="paymentModal" class="modal">
+            <div class="modal-content">
+                <div class="flex justify-between items-center pb-4 border-b">
+                    <h3 class="text-xl font-semibold text-gray-700">Pilih Metode Pembayaran Info</h3>
+                    <span class="close-button" id="closePaymentModal">&times;</span>
+                </div>
+                <div class="my-6">
+                    <p class="text-gray-600 mb-1">Anda dapat melakukan pembayaran melalui E-wallet berikut.</p>
+                    <p class="text-gray-600 mb-4 text-sm">Konfirmasi pesanan akan dilakukan melalui WhatsApp.</p>
+                    <div id="paymentOptionsContainer" class="grid grid-cols-2 gap-4">
+                        <!-- Payment options will be injected here -->
+                    </div>
+                </div>
+                <button id="confirmPaymentButton" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                    <i class="fab fa-whatsapp mr-2"></i>Konfirmasi via WhatsApp
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white text-center p-6 mt-12">
+        <p>&copy; <span id="currentYear"></span> Cemilur. Semua Hak Dilindungi.</p>
+    </footer>
+
+    <!-- Notification Element -->
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productListEl = document.getElementById('productList');
+            const cartButton = document.getElementById('cartButton');
+            const cartModal = document.getElementById('cartModal');
+            const closeCartModal = document.getElementById('closeCartModal');
+            const cartItemsContainer = document.getElementById('cartItemsContainer');
+            const cartCountEl = document.getElementById('cartCount');
+            const cartTotalEl = document.getElementById('cartTotal');
+            const checkoutButton = document.getElementById('checkoutButton');
+
+            const paymentModal = document.getElementById('paymentModal');
+            const closePaymentModal = document.getElementById('closePaymentModal');
+            const paymentOptionsContainer = document.getElementById('paymentOptionsContainer');
+            const confirmPaymentButton = document.getElementById('confirmPaymentButton');
+            
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.getElementById('notificationMessage');
+
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+            const products = [
+                { 
+                    id: 'cem_ori', 
+                    name: 'Cemilur Original', 
+                    image: 'https://placehold.co/300x200/f97316/white?text=Cemilur+Original', 
+                    description: 'Rasa asli Cemilur yang gurih dan renyah.',
+                    sizes: [
+                        { id: 'kecil', name: 'Kecil', price: 2000 },
+                        { id: 'besar', name: 'Besar', price: 5000 }
+                    ]
+                },
+                { 
+                    id: 'cem_pds', 
+                    name: 'Cemilur Pedas', 
+                    image: 'https://placehold.co/300x200/ef4444/white?text=Cemilur+Pedas', 
+                    description: 'Sensasi pedas yang menggugah selera.',
+                    sizes: [
+                        { id: 'kecil', name: 'Kecil', price: 2000 },
+                        { id: 'besar', name: 'Besar', price: 5000 }
+                    ]
+                },
+                { 
+                    id: 'cem_pdm', 
+                    name: 'Cemilur Pedas Manis', 
+                    image: 'https://placehold.co/300x200/f59e0b/white?text=Cemilur+Pedas+Manis', 
+                    description: 'Perpaduan pedas dan manis yang pas.',
+                    sizes: [
+                        { id: 'kecil', name: 'Kecil', price: 2000 },
+                        { id: 'besar', name: 'Besar', price: 5000 }
+                    ]
+                },
+                { 
+                    id: 'cem_kjm', 
+                    name: 'Cemilur Keju Manis', 
+                    image: 'https://placehold.co/300x200/10b981/white?text=Cemilur+Keju+Manis', 
+                    description: 'Gurihnya keju dengan sentuhan manis.',
+                    sizes: [
+                        { id: 'kecil', name: 'Kecil', price: 2000 },
+                        { id: 'besar', name: 'Besar', price: 5000 }
+                    ]
+                }
+            ];
+
+            let cart = []; 
+            let selectedPaymentMethodInfo = null; // To store the chosen E-wallet info, though not for direct payment
+
+            const paymentMethodsInfo = [ // Renamed to reflect it's for info
+                { id: 'dana', name: 'Dana', logo: 'https://placehold.co/100x50/0070f3/white?text=DANA' },
+                { id: 'gopay', name: 'GoPay', logo: 'https://placehold.co/100x50/00aced/white?text=GoPay' },
+                { id: 'ovo', name: 'OVO', logo: 'https://placehold.co/100x50/4f2683/white?text=OVO' },
+                { id: 'lainnya', name: 'Lainnya', logo: 'https://placehold.co/100x50/7c3aed/white?text=Transfer+Bank+%26+Lainnya' }
+            ];
+
+            function showNotification(message, type = 'success') {
+                notificationMessage.textContent = message;
+                notification.className = 'notification show';
+                notification.style.backgroundColor = type === 'error' ? '#EF4444' : '#10B981';
+                setTimeout(() => { notification.className = 'notification hide'; }, 3000);
+            }
+
+            function renderProducts() {
+                productListEl.innerHTML = '';
+                products.forEach(product => {
+                    const defaultSize = product.sizes[0]; 
+                    let sizeOptionsHTML = '';
+                    product.sizes.forEach((size, index) => {
+                        sizeOptionsHTML += `
+                            <div class="size-option">
+                                <input type="radio" id="size-${product.id}-${size.id}" name="size-${product.id}" value="${size.id}" ${index === 0 ? 'checked' : ''} onchange="updatePriceDisplay('${product.id}', '${size.id}')">
+                                <label for="size-${product.id}-${size.id}">${size.name}</label>
+                            </div>
+                        `;
+                    });
+
+                    const productElement = `
+                        <div class="product-card bg-white p-6 rounded-lg shadow-lg flex flex-col">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover rounded-md mb-4" onerror="this.onerror=null;this.src='https://placehold.co/300x200/cccccc/333333?text=Image+Not+Found';">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-2">${product.name}</h3>
+                            <p class="text-gray-600 text-sm mb-3 flex-grow">${product.description}</p>
+                            <div class="mb-4">
+                                <p class="text-sm font-medium text-gray-700 mb-1">Pilih Ukuran:</p>
+                                <div class="flex flex-wrap">
+                                    ${sizeOptionsHTML}
+                                </div>
+                            </div>
+                            <p class="text-lg font-bold text-orange-500 mb-4" id="price-${product.id}">
+                                Rp ${defaultSize.price.toLocaleString('id-ID')}
+                            </p>
+                            <button onclick="addToCartHandler('${product.id}')" class="mt-auto w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                                <i class="fas fa-cart-plus mr-2"></i>Tambah ke Keranjang
+                            </button>
+                        </div>
+                    `;
+                    productListEl.innerHTML += productElement;
+                });
+            }
+
+            window.updatePriceDisplay = function(productId, selectedSizeId) {
+                const product = products.find(p => p.id === productId);
+                const selectedSize = product.sizes.find(s => s.id === selectedSizeId);
+                if (selectedSize) {
+                    document.getElementById(`price-${productId}`).textContent = `Rp ${selectedSize.price.toLocaleString('id-ID')}`;
+                }
+            }
+
+            window.addToCartHandler = function(productId) {
+                const selectedSizeRadio = document.querySelector(`input[name="size-${productId}"]:checked`);
+                if (!selectedSizeRadio) {
+                    showNotification('Silakan pilih ukuran produk.', 'error');
+                    return;
+                }
+                const selectedSizeId = selectedSizeRadio.value;
+                addToCart(productId, selectedSizeId);
+            }
+            
+            function addToCart(productId, sizeId) {
+                const product = products.find(p => p.id === productId);
+                if (!product) return;
+                const selectedSize = product.sizes.find(s => s.id === sizeId);
+                if (!selectedSize) return;
+
+                const cartItemId = `${productId}_${sizeId}`;
+                const cartItem = cart.find(item => item.cartItemId === cartItemId);
+
+                if (cartItem) {
+                    cartItem.quantity++;
+                } else {
+                    cart.push({ 
+                        cartItemId: cartItemId,
+                        productId: product.id,
+                        sizeId: selectedSize.id,
+                        name: `${product.name} (${selectedSize.name})`, 
+                        price: selectedSize.price, 
+                        quantity: 1,
+                        image: product.image 
+                    });
+                }
+                updateCart();
+                showNotification(`${product.name} (${selectedSize.name}) ditambahkan ke keranjang!`);
+            }
+
+            function updateCart() {
+                renderCartItems();
+                updateCartSummary();
+                checkoutButton.disabled = cart.length === 0;
+            }
+            
+            function renderCartItems() {
+                cartItemsContainer.innerHTML = '';
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Keranjang belanja Anda kosong.</p>';
+                    return;
+                }
+                cart.forEach(item => {
+                    const cartItemElement = `
+                        <div class="flex justify-between items-center py-3 border-b last:border-b-0">
+                            <div class="flex items-center">
+                                <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded-md mr-4" onerror="this.onerror=null;this.src='https://placehold.co/64x64/cccccc/333333?text=Img';">
+                                <div>
+                                    <h4 class="font-semibold text-gray-700">${item.name}</h4>
+                                    <p class="text-sm text-gray-500">Rp ${item.price.toLocaleString('id-ID')}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <button onclick="decreaseQuantity('${item.cartItemId}')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded-l hover:bg-gray-300">-</button>
+                                <span class="px-3 py-1 bg-gray-100 text-gray-700">${item.quantity}</span>
+                                <button onclick="increaseQuantity('${item.cartItemId}')" class="px-2 py-1 bg-gray-200 text-gray-700 rounded-r hover:bg-gray-300">+</button>
+                                <button onclick="removeFromCart('${item.cartItemId}')" class="ml-4 text-red-500 hover:text-red-700">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    cartItemsContainer.innerHTML += cartItemElement;
+                });
+            }
+
+            window.increaseQuantity = function(cartItemId) {
+                const cartItem = cart.find(item => item.cartItemId === cartItemId);
+                if (cartItem) { cartItem.quantity++; updateCart(); }
+            }
+
+            window.decreaseQuantity = function(cartItemId) {
+                const cartItem = cart.find(item => item.cartItemId === cartItemId);
+                if (cartItem && cartItem.quantity > 1) {
+                    cartItem.quantity--;
+                } else if (cartItem && cartItem.quantity === 1) {
+                    removeFromCart(cartItemId);
+                }
+                updateCart();
+            }
+
+            window.removeFromCart = function(cartItemId) {
+                const itemIndex = cart.findIndex(item => item.cartItemId === cartItemId);
+                if (itemIndex > -1) {
+                    const removedItem = cart.splice(itemIndex, 1)[0];
+                    updateCart();
+                    showNotification(`${removedItem.name} dihapus dari keranjang.`, 'error');
+                }
+            }
+
+            function updateCartSummary() {
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartCountEl.textContent = totalItems;
+                cartTotalEl.textContent = `Rp ${totalPrice.toLocaleString('id-ID')}`;
+            }
+
+            cartButton.onclick = () => cartModal.style.display = 'block';
+            closeCartModal.onclick = () => cartModal.style.display = 'none';
+            
+            checkoutButton.onclick = () => {
+                if (cart.length > 0) {
+                    cartModal.style.display = 'none';
+                    renderPaymentOptionsInfo(); // Changed function name
+                    paymentModal.style.display = 'block';
+                } else {
+                    showNotification('Keranjang Anda kosong. Silakan tambahkan produk terlebih dahulu.', 'error');
+                }
+            };
+
+            closePaymentModal.onclick = () => {
+                paymentModal.style.display = 'none';
+                selectedPaymentMethodInfo = null; 
+            }
+
+            window.onclick = function(event) {
+                if (event.target == cartModal) cartModal.style.display = "none";
+                if (event.target == paymentModal) {
+                    paymentModal.style.display = "none";
+                    selectedPaymentMethodInfo = null;
+                }
+            }
+
+            function renderPaymentOptionsInfo() { // Changed function name
+                paymentOptionsContainer.innerHTML = '';
+                paymentMethodsInfo.forEach(method => {
+                    const optionElement = `
+                        <div id="payment-${method.id}" class="payment-option border-2 border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-blue-500" onclick="selectPaymentInfo('${method.id}')">
+                            <img src="${method.logo}" alt="${method.name}" class="h-10 mx-auto mb-2" onerror="this.onerror=null;this.src='https://placehold.co/100x50/cccccc/333333?text=Logo';">
+                            <p class="font-semibold">${method.name}</p>
+                        </div>
+                    `;
+                    paymentOptionsContainer.innerHTML += optionElement;
+                });
+            }
+
+            window.selectPaymentInfo = function(methodId) { // Changed function name
+                selectedPaymentMethodInfo = methodId; // Store for potential future use or just to show selection
+                document.querySelectorAll('.payment-option').forEach(opt => opt.classList.remove('selected'));
+                document.getElementById(`payment-${methodId}`).classList.add('selected');
+            }
+
+            confirmPaymentButton.onclick = () => {
+                const whatsAppNumber = "6282161065681"; // Nomor WhatsApp Indonesia
+                let message = "Halo Cemilur, saya ingin memesan:\n\n";
+                let totalPrice = 0;
+
+                cart.forEach(item => {
+                    message += `${item.name} - ${item.quantity} x Rp ${item.price.toLocaleString('id-ID')}\n`;
+                    totalPrice += item.price * item.quantity;
+                });
+                message += `\nTotal Pesanan: Rp ${totalPrice.toLocaleString('id-ID')}\n\n`;
+                
+                if (selectedPaymentMethodInfo) {
+                    const paymentMethod = paymentMethodsInfo.find(p => p.id === selectedPaymentMethodInfo);
+                    if (paymentMethod) {
+                         message += `Saya memilih info pembayaran melalui: ${paymentMethod.name}\n`;
+                    }
+                }
+                message += `\nMohon konfirmasi ketersediaan dan detail pembayarannya. Terima kasih!`;
+
+                const encodedMessage = encodeURIComponent(message);
+                const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodedMessage}`;
+                
+                window.open(whatsappUrl, '_blank'); // Open WhatsApp in a new tab
+
+                // Optional: Show notification and clear cart after attempting to open WhatsApp
+                showNotification('Silakan lanjutkan pesanan Anda di WhatsApp.', 'success');
+                paymentModal.style.display = 'none';
+                // Cart can be cleared here, or after actual confirmation from WhatsApp
+                // For now, let's clear it to simulate order completion from the web's perspective.
+                // cart = []; 
+                // updateCart();
+                // selectedPaymentMethodInfo = null; 
+            }
+
+            renderProducts();
+            updateCart();
+        });
+    </script>
+</body>
+</html>
